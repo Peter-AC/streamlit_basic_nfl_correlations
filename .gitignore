@@ -1,4 +1,4 @@
-.\.idea\
+/.idea/
 
-.\final_frame_2000.csv
-.\play_by_play_2022.csv.gz
+./final_frame_2000.csv
+./play_by_play_2022.csv.gz
