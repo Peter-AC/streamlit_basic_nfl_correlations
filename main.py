@@ -454,7 +454,6 @@ with st.sidebar:
         st.multiselect(
             filter_info.prompt,
             filter_info.all_options,
-            st.session_state[filter_type.name],
             key=filter_type.name, )
 
 # streamlit run .\main.py
