@@ -427,8 +427,8 @@ def get_final_frame() -> pd.DataFrame:
 year_to_process: Final = 2022
 neutral_win_probability: Final = 0.05
 max_week_split_count: Final = 2000
-prediction_week_count: Final = 6
-randomize_weekly_splits: Final = False
+prediction_week_count: Final = 9
+randomize_weekly_splits: Final = True
 maximum_week: Final = 18
 
 all_filters: Final = {
