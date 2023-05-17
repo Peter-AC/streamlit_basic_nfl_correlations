@@ -92,7 +92,6 @@ def get_week_splits(count: int) -> list[WeekSplit]:
 
     upper_week_range: Final = 19
     all_weeks: Final = set(range(1, upper_week_range))
-    prediction_week_count: Final = 8
     week_combinations: list[WeekSplit] = []
 
     while count > 0:
@@ -419,6 +418,7 @@ def get_final_frame() -> pd.DataFrame:
 year_to_process: Final = 2022
 neutral_win_probability: Final = 0.05
 max_week_split_count: Final = 2000
+prediction_week_count: Final = 6
 
 all_filters: Final = {
     FilterType.subject: FilterInfo('Subjects:', ['any', 'core', 'rushing', 'passing']),
@@ -443,7 +443,7 @@ st.write('The "core" subject only includes rushes and passes while the "any" sub
 st.write(f'The "neutral" scenario filters out plays with a win probability greater than {100 - neutral_win_probability * 100:.0f}% or less than {neutral_win_probability * 100:.0f}%.')
 st.write('The "success" base is 1 if the play\'s EPA was greater than zero and 0 otherwise.')
 st.write('The "differential" unit is the offense plus the defense (remember that defensive values are the opposite of offensive values so this will work).')
-st.write(f'Raw play-by-play data was processed {max_week_split_count:,} times per subject/scenario pair, each time split into a random 10 week training data set and a leftover 8 week prediction data set.')
+st.write(f'Raw play-by-play data was processed {max_week_split_count:,} times per subject/scenario pair, each time split into a random {18 - prediction_week_count} week training data set and a leftover {prediction_week_count} week prediction data set.')
 st.write('Raw play-by-play data from [nflfastR](https://github.com/nflverse/nflverse-data/).')
 
 with st.sidebar:
