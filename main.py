@@ -1,5 +1,6 @@
 from enum import Enum, auto as get_auto_enum_value
 from dataclasses import dataclass
+from itertools import combinations as get_combinations
 import pandas as pd
 from pathlib import Path
 from random import sample as random_sample, seed as random_seed
@@ -87,17 +88,24 @@ def get_final_plays(plays: pd.DataFrame) -> pd.DataFrame:
     return final_plays
 
 
-def get_week_splits(count: int) -> list[WeekSplit]:
+def get_week_splits(count: int, *, randomize: bool) -> list[WeekSplit]:
     random_seed()
 
-    upper_week_range: Final = 19
+    upper_week_range: Final = maximum_week + 1
     all_weeks: Final = set(range(1, upper_week_range))
     week_combinations: list[WeekSplit] = []
 
-    while count > 0:
-        count -= 1
-        prediction_weeks: set[int] = set(random_sample(range(1, upper_week_range), prediction_week_count))
-        week_combinations.append(WeekSplit(example_weeks=all_weeks - prediction_weeks, prediction_weeks=prediction_weeks))
+    if randomize:
+        while count > 0:
+            count -= 1
+            prediction_weeks: set[int] = set(random_sample(range(1, upper_week_range), prediction_week_count))
+            week_combinations.append(WeekSplit(example_weeks=all_weeks - prediction_weeks, prediction_weeks=prediction_weeks))
+    else:
+        for combination in get_combinations(all_weeks, prediction_week_count):
+            prediction_weeks: set[int] = set(combination)
+            week_combinations.append(WeekSplit(example_weeks=all_weeks - prediction_weeks, prediction_weeks=prediction_weeks))
+            if len(week_combinations) >= count:
+                break
 
     return week_combinations
 
@@ -409,7 +417,7 @@ def get_final_frame() -> pd.DataFrame:
             MetricGenerator(BaseMetric.success, get_success_from), ],
         all_plays=all_plays,
         final_plays=all_final_plays,
-        week_splits=get_week_splits(max_week_split_count), )
+        week_splits=get_week_splits(max_week_split_count, randomize=randomize_weekly_splits), )
 
     all_correlations: Final = get_all_correlations(context)
     all_correlations.to_csv(final_frame_stem, index=False)
@@ -420,6 +428,8 @@ year_to_process: Final = 2022
 neutral_win_probability: Final = 0.05
 max_week_split_count: Final = 2000
 prediction_week_count: Final = 6
+randomize_weekly_splits: Final = False
+maximum_week: Final = 18
 
 all_filters: Final = {
     FilterType.subject: FilterInfo('Subjects:', ['any', 'core', 'rushing', 'passing']),
@@ -444,7 +454,10 @@ st.write('The "core" subject only includes rushes and passes while the "any" sub
 st.write(f'The "neutral" scenario filters out plays with a win probability greater than {100 - neutral_win_probability * 100:.0f}% or less than {neutral_win_probability * 100:.0f}%.')
 st.write('The "success" base is 1 if the play\'s EPA was greater than zero and 0 otherwise.')
 st.write('The "differential" unit is the offense plus the defense (remember that defensive values are the opposite of offensive values so this will work).')
-st.write(f'Raw play-by-play data was processed {max_week_split_count:,} times per subject/scenario pair, each time split into a random {18 - prediction_week_count} week training data set and a leftover {prediction_week_count} week prediction data set.')
+if randomize_weekly_splits:
+    st.write(f'Raw play-by-play data was processed {max_week_split_count:,} times per subject/scenario pair, each time split into a random {maximum_week - prediction_week_count} week training data set and a leftover {prediction_week_count} week prediction data set.')
+else:
+    st.write(f'Raw play-by-play data was processed no more than {max_week_split_count:,} times per subject/scenario pair, once for each combination of {prediction_week_count} week prediction data set and a leftover {maximum_week - prediction_week_count} week prediction data set.')
 st.write('Raw play-by-play data from [nflfastR](https://github.com/nflverse/nflverse-data/).')
 
 with st.sidebar:
