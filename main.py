@@ -359,10 +359,11 @@ def yield_progress_then_all_correlations(context: Context) -> Iterator[float | p
     for i, scenario in enumerate(scenarios):
         yield i / len(scenarios)
 
+        is_neutral_str = 'neutral' if scenario.is_neutral else 'any'
         scenario_correlations: pd.DataFrame = update_progress_then_return_frame(
             yield_progress_then_single_scenario_correlations(context, scenario.get_plays()),
-            f'Running all metrics in "{scenario.name}" scenario...' + ' {:.0f}%')
-        scenario_correlations.insert(0, 'scenario', 'neutral' if scenario.is_neutral else 'any')
+            f'Running all metrics in scenario {is_neutral_str}, subject {scenario.name}...' + ' {:.0f}%')
+        scenario_correlations.insert(0, 'scenario', is_neutral_str)
         scenario_correlations.insert(0, 'subject', scenario.name)
         scenarios_correlations.append(scenario_correlations)
 
@@ -372,7 +373,7 @@ def yield_progress_then_all_correlations(context: Context) -> Iterator[float | p
 def get_all_correlations(context: Context) -> pd.DataFrame:
     correlations: pd.DataFrame = update_progress_then_return_frame(
         yield_progress_then_all_correlations(context),
-        'Running all scenarios... {:.0f}%')
+        'Running all subject/scenario pairs... {:.0f}%')
 
     correlations.sort_values(by='correlation', inplace=True, ascending=False)
     return correlations
