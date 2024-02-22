@@ -426,7 +426,7 @@ def get_final_frame() -> pd.DataFrame:
 
 year_to_process: Final = 2023
 neutral_win_probability: Final = 0.05
-max_week_split_count: Final = 2000
+max_week_split_count: Final = 10000
 prediction_week_count: Final = 9
 randomize_weekly_splits: Final = True
 maximum_week: Final = 18
