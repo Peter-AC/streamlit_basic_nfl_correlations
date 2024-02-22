@@ -424,7 +424,7 @@ def get_final_frame() -> pd.DataFrame:
     return filter_correlations(all_correlations)
 
 
-year_to_process: Final = 2022
+year_to_process: Final = 2023
 neutral_win_probability: Final = 0.05
 max_week_split_count: Final = 2000
 prediction_week_count: Final = 9
@@ -449,7 +449,7 @@ st.dataframe(final_frame, use_container_width=True)
 final_correlations: Final = final_frame['correlation']
 st.write(f'Correlation summary: min = {final_correlations.min():.4f}, max = {final_correlations.max():.4f}, mean = {final_correlations.mean():.4f}, median = {final_correlations.median():.4f}, rows = {len(final_correlations)}')
 st.subheader('Notes')
-st.write('Offensive and defensive performances are modified so that greater values are always better. For instance, offensive yards are positive (the more the better) but defensive yards are negative (the less the better). Turnovers are the odd metric out because defensive turnovers are positive and offensive turnovers are negative.')
+st.write('Offensive and defensive performances are modified so that greater values are always better. For instance, offensive yards are positive (the more the better) but defensive yards are negative (the fewer the better). Turnovers are the odd metric out because defensive turnovers are positive and offensive turnovers are negative.')
 st.write('The "core" subject only includes rushes and passes while the "any" subject includes rushes, passes, field goal attempts, and extra point attempts.')
 st.write(f'The "neutral" scenario filters out plays with a win probability greater than {100 - neutral_win_probability * 100:.0f}% or less than {neutral_win_probability * 100:.0f}%.')
 st.write('The "success" base is 1 if the play\'s EPA was greater than zero and 0 otherwise.')
