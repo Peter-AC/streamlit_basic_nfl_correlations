@@ -463,6 +463,7 @@ st.write('Raw play-by-play data from [nflfastR](https://github.com/nflverse/nflv
 with st.sidebar:
     st.subheader('Filters')
     st.button('Reset all', use_container_width=True, on_click=lambda: st.session_state.clear())
+    st.write('If no metrics show in the table, try resetting all filters.')
 
     for filter_type, filter_info in all_filters.items():
         st.multiselect(
