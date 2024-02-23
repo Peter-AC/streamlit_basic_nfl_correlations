@@ -16,7 +16,6 @@ loss_value: Final = 0.0
 class BaseMetric(Enum):
     points = get_auto_enum_value()
     yards = get_auto_enum_value()
-    series_conversions = get_auto_enum_value()
     wins = get_auto_enum_value()
     epa = get_auto_enum_value()
     turnovers = get_auto_enum_value()
@@ -70,6 +69,8 @@ class Context:
 def load_plays_from_file_for_year(year: int, *, win_prob: float) -> pd.DataFrame:
     csv_stem: Final = f'play_by_play_{year}.csv.gz'
     plays: Final = pd.read_csv(csv_stem, compression='gzip', low_memory=False)
+    plays['unique_drive'] = plays['fixed_drive'] + ((plays['week'] - 1) * 1_000)
+    plays['unique_series'] = plays['series'] + ((plays['week'] - 1) * 1_000)
     plays['neutral_scenario'] = (
         (plays.wp > win_prob) &
         (plays.wp < (1.0-win_prob)))
@@ -141,7 +142,8 @@ def get_totals_from(final_plays: pd.DataFrame, useful_plays: pd.DataFrame, *, fo
             'posteam',
             'defteam',
             'week',
-            'fixed_drive',
+            'unique_drive',
+            'unique_series',
             'pass_touchdown',
             'rush_touchdown',
             'field_goal_result',
@@ -156,7 +158,8 @@ def get_totals_from(final_plays: pd.DataFrame, useful_plays: pd.DataFrame, *, fo
 
     totals: Final = plays_by_team.agg(
         games=('week', 'nunique'),
-        drives=('fixed_drive', 'nunique'),
+        drives=('unique_drive', 'nunique'),
+        series=('unique_series', 'nunique'),
         plays=('week', 'count'),
         pass_touchdowns=('pass_touchdown', 'sum'),
         rush_touchdowns=('rush_touchdown', 'sum'),
@@ -164,7 +167,6 @@ def get_totals_from(final_plays: pd.DataFrame, useful_plays: pd.DataFrame, *, fo
         two_point_conversions=('two_point_conv_result', lambda series: (series == 'success').sum()),
         extra_points=('extra_point_result', lambda series: (series == 'good').sum()),
         yards_gained=('yards_gained', 'sum'),
-        successful_series=('series_success', 'sum'),
         epa=('epa', 'sum'),
         fumbles=('fumble_lost', 'sum'),
         interceptions=('interception', 'sum'), )
@@ -184,10 +186,12 @@ def get_unadjusted_scores(raw_scores: pd.DataFrame, offensive_totals: pd.DataFra
         data={
             'offense_game': raw_scores.offense / offensive_totals.games,
             'offense_drive': raw_scores.offense / offensive_totals.drives,
+            'offense_series': raw_scores.offense / offensive_totals.series,
             'offense_play': raw_scores.offense / offensive_totals.plays,
 
             'defense_game': raw_scores.defense / defensive_totals.games,
             'defense_drive': raw_scores.defense / defensive_totals.drives,
+            'defense_series': raw_scores.defense / defensive_totals.series,
             'defense_play': raw_scores.defense / defensive_totals.plays, })
 
     return unadjusted_scores
@@ -217,14 +221,6 @@ def get_yards_from(offensive_totals: pd.DataFrame, defensive_totals: pd.DataFram
         data={
             'offense': offensive_totals.yards_gained,
             'defense': -defensive_totals.yards_gained, })
-
-
-def get_successful_series_from(offensive_totals: pd.DataFrame, defensive_totals: pd.DataFrame) -> pd.DataFrame:
-    return pd.DataFrame(
-        index=offensive_totals.index,
-        data={
-            'offense': offensive_totals.successful_series,
-            'defense': -defensive_totals.successful_series, })
 
 
 def get_wins_from(offensive_totals: pd.DataFrame, defensive_totals: pd.DataFrame) -> pd.DataFrame:
@@ -289,10 +285,12 @@ def yield_progress_then_single_scenario_correlations(context: Context, useful_pl
                 data={
                     'offense_game': example_unadjusted_scores.offense_game + example_avg_opponent_scores.defense_game,
                     'offense_drive': example_unadjusted_scores.offense_drive + example_avg_opponent_scores.defense_drive,
+                    'offense_series': example_unadjusted_scores.offense_series + example_avg_opponent_scores.defense_series,
                     'offense_play': example_unadjusted_scores.offense_play + example_avg_opponent_scores.defense_play,
 
                     'defense_game': example_unadjusted_scores.defense_game + example_avg_opponent_scores.offense_game,
                     'defense_drive': example_unadjusted_scores.defense_drive + example_avg_opponent_scores.offense_drive,
+                    'defense_series': example_unadjusted_scores.defense_series + example_avg_opponent_scores.offense_series,
                     'defense_play': example_unadjusted_scores.defense_play + example_avg_opponent_scores.offense_play, })
 
             add_differential_columns_to(example_unadjusted_scores)
@@ -410,7 +408,6 @@ def get_final_frame() -> pd.DataFrame:
         all_metric_generators=[
             MetricGenerator(BaseMetric.points, get_points_from),
             MetricGenerator(BaseMetric.yards, get_yards_from),
-            MetricGenerator(BaseMetric.series_conversions, get_successful_series_from),
             MetricGenerator(BaseMetric.wins, get_wins_from),
             MetricGenerator(BaseMetric.epa, get_epa_from),
             MetricGenerator(BaseMetric.turnovers, get_turnovers_from),
@@ -434,10 +431,10 @@ maximum_week: Final = 18
 all_filters: Final = {
     FilterType.subject: FilterInfo('Subjects:', ['any', 'core', 'rushing', 'passing']),
     FilterType.scenario: FilterInfo('Scenarios:', ['any', 'neutral']),
-    FilterType.base: FilterInfo('Bases:', ['points', 'yards', 'series_conversions', 'wins', 'epa', 'turnovers', 'success']),
+    FilterType.base: FilterInfo('Bases:', ['points', 'yards', 'wins', 'epa', 'turnovers', 'success']),
     FilterType.adjusted_by: FilterInfo('Adjustments:', ['none', 'opponent']),
     FilterType.unit: FilterInfo('Units:', ['offense', 'defense', 'differential']),
-    FilterType.per: FilterInfo('Frequency:', ['game', 'drive', 'play']), }
+    FilterType.per: FilterInfo('Frequency:', ['game', 'drive', 'series', 'play']), }
 
 for filter_type, filter_info in all_filters.items():
     if filter_type.name not in st.session_state:
